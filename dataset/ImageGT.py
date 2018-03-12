@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 import numpy as np
 import cv2
-from util.processing import resize_points, resolve_points, draw_rects_image, resolve_text
+from util.processing import resize_points, resolve_points, draw_polygon_image, resolve_text, draw_rects_image
 
 
 class ImageGT:
@@ -20,11 +20,21 @@ class ImageGT:
         self.gtlines = gtlines
         self.limit_min = limit_min
         self.limit_max = limit_max
+        self.points = resolve_points(self.gtlines[0])
         self.re_imgs, self.re_points = self.resize_img()
         self.im_info = [np.array(re_img).shape[0:2] for re_img in self.re_imgs]
-        print 'im_info is ', self.im_info
         self.gt_texts = resolve_text(self.gtlines[0])
-        self.gt_ishard = [True if text == '###' else False for text in self.gt_texts]
+        self.notcare = []
+        cur_notcare = []
+        for index, text in enumerate(self.gt_texts):
+            if text == '###':
+                cur_notcare.append(self.re_points[0][index])
+        self.notcare.append(cur_notcare)
+
+        self.re_points = np.squeeze(self.re_points)
+        self.gt = np.concatenate((self.re_points, np.ones([len(self.re_points), 1])), axis=1)
+        self.is_hard = [False] * len(self.gt)
+        # print np.shape(self.imgs), np.shape(self.re_points), np.shape(self.im_info)
 
     def resize_img(self, show=False):
         imgs = []
@@ -43,9 +53,9 @@ class ImageGT:
             re_im = cv2.resize(img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
             re_size = re_im.shape
             cur_points = resolve_points(self.gtlines[index])
-            re_cur_points = resize_points(points, img_size, re_size)
+            re_cur_points = resize_points(cur_points, img_size, re_size)
             if show:
-                draw_rects_image(img, cur_points)
+                draw_polygon_image(img, cur_points)
                 draw_rects_image(re_im, re_cur_points)
             imgs.append(re_im)
             points.append(re_cur_points)

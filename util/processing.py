@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import os
 from PIL import Image, ImageDraw
+import math
 
 
 def read_image(image_path):
@@ -69,21 +70,91 @@ def resolve_points(lines):
 def resize_points(points, img_size, resizes):
     res_points = []
     for point in points:
-        cur_point = np.zeros([8, 1])
-        cur_point[0, 0] = int(float(point[0]) / img_size[1] * resizes[1])
-        cur_point[1, 0] = int(float(point[1]) / img_size[0] * resizes[0])
-        cur_point[2, 0] = int(float(point[2]) / img_size[1] * resizes[1])
-        cur_point[3, 0] = int(float(point[3]) / img_size[0] * resizes[0])
-        cur_point[4, 0] = int(float(point[4]) / img_size[1] * resizes[1])
-        cur_point[5, 0] = int(float(point[5]) / img_size[0] * resizes[0])
-        cur_point[6, 0] = int(float(point[6]) / img_size[1] * resizes[1])
-        cur_point[7, 0] = int(float(point[7]) / img_size[0] * resizes[0])
-        res_points.append(cur_point)
+        pt_x = np.zeros((4, 1))
+        pt_y = np.zeros((4, 1))
+        # 重新调整坐标，因为前面有对图像的resize
+        pt_x[0, 0] = int(float(point[0]) / img_size[1] * resizes[1])
+        pt_y[0, 0] = int(float(point[1]) / img_size[0] * resizes[0])
+        pt_x[1, 0] = int(float(point[2]) / img_size[1] * resizes[1])
+        pt_y[1, 0] = int(float(point[3]) / img_size[0] * resizes[0])
+        pt_x[2, 0] = int(float(point[4]) / img_size[1] * resizes[1])
+        pt_y[2, 0] = int(float(point[5]) / img_size[0] * resizes[0])
+        pt_x[3, 0] = int(float(point[6]) / img_size[1] * resizes[1])
+        pt_y[3, 0] = int(float(point[7]) / img_size[0] * resizes[0])
+
+        ind_x = np.argsort(pt_x, axis=0)
+        pt_x = pt_x[ind_x]
+        pt_y = pt_y[ind_x]
+
+        if pt_y[0] < pt_y[1]:
+            pt1 = (pt_x[0], pt_y[0])
+            pt3 = (pt_x[1], pt_y[1])
+        else:
+            pt1 = (pt_x[1], pt_y[1])
+            pt3 = (pt_x[0], pt_y[0])
+
+        if pt_y[2] < pt_y[3]:
+            pt2 = (pt_x[2], pt_y[2])
+            pt4 = (pt_x[3], pt_y[3])
+        else:
+            pt2 = (pt_x[3], pt_y[3])
+            pt4 = (pt_x[2], pt_y[2])
+
+        xmin = int(min(pt1[0], pt2[0]))
+        ymin = int(min(pt1[1], pt2[1]))
+        xmax = int(max(pt2[0], pt4[0]))
+        ymax = int(max(pt3[1], pt4[1]))
+
+        if xmin < 0:
+            xmin = 0
+        if xmax > resizes[1] - 1:
+            xmax = resizes[1] - 1
+        if ymin < 0:
+            ymin = 0
+        if ymax > resizes[0] - 1:
+            ymax = resizes[0] - 1
+
+        width = xmax - xmin
+        height = ymax - ymin
+
+        # reimplement
+        step = 16.0
+        x_left = []
+        x_right = []
+        x_left.append(xmin)
+        x_left_start = int(math.ceil(xmin / 16.0) * 16.0)
+        if x_left_start == xmin:
+            x_left_start = xmin + 16
+        for i in np.arange(x_left_start, xmax, 16):
+            x_left.append(i)
+        x_left = np.array(x_left)
+
+        x_right.append(x_left_start - 1)
+        for i in range(1, len(x_left) - 1):
+            x_right.append(x_left[i] + 15)
+        x_right.append(xmax)
+        x_right = np.array(x_right)
+
+        idx = np.where(x_left == x_right)
+        x_left = np.delete(x_left, idx, axis=0)
+        x_right = np.delete(x_right, idx, axis=0)
+        for i in range(len(x_left)):
+            res_points.append([int(x_left[i]), int(ymin), int(x_right[i]), int(ymax)])
     return res_points
 
 
 def show_image(img):
     img = Image.fromarray(img)
+    img.show()
+
+
+def draw_polygon_image(img, rects):
+    img =Image.fromarray(img)
+    draw = ImageDraw.Draw(img)
+
+    for rect in rects:
+        print rect, np.shape(img)
+        draw.polygon(tuple(rect), 'olive', 'hotpink')
     img.show()
 
 
@@ -93,7 +164,7 @@ def draw_rects_image(img, rects):
 
     for rect in rects:
         print rect, np.shape(img)
-        draw.polygon(tuple(rect), 'olive', 'hotpink')
+        draw.rectangle(rect, 'olive', 'hotpink')
     img.show()
 
 def resize_image_gt(image_path, gt_path):

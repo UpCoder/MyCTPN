@@ -29,8 +29,6 @@ class Dataset:
         self.img_files = self.img_files[inds]
         inds = np.argsort(self.gt_files)
         self.gt_files = self.gt_files[inds]
-        print self.img_files, len(self.img_files)
-        print self.gt_files, len(self.gt_files)
         if not self.check_sort():
             return
         self.img_train_files, self.gt_train_files, self.img_val_files, self.gt_val_files = split2_train_val(
@@ -38,12 +36,11 @@ class Dataset:
         self.train_imgs, self.train_gt = read_imgs_gtfiles(self.img_train_files, self.gt_train_files)
         self.val_imgs, self.val_gt = read_imgs_gtfiles(self.img_val_files, self.gt_val_files)
         self.train_generator = GenerateBatch(self.train_imgs, self.train_gt, batch_size=1).generate_next_batch()
-        print len(self.train_imgs), len(self.val_imgs)
+        self.val_generator = GenerateBatch(self.val_imgs, self.val_gt, batch_size=1).generate_next_batch()
 
 
 if __name__ == '__main__':
     dataset = Dataset('/home/give/Game/OCR/data/ICDAR2017/img_test', '/home/give/Game/OCR/data/ICDAR2017/txt_test')
-    print dataset.check_sort()
-    for i in range(120):
-        imageGT = dataset.train_generator.next()
-    imageGT.resize_img()
+    # for i in range(120):
+    imageGT = dataset.train_generator.next()
+    imageGT.resize_img(show=True)

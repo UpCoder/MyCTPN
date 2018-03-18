@@ -40,16 +40,22 @@ def do_reshape(input, d, name):
                        int(d)])
 
 
-def do_conv(x, layer_name, kernel_size, filter_size, stride_size, padding='SAME', activation_method=None, trainable=True, weights_initializer=tf.truncated_normal_initializer(0.0, stddev=0.01)):
+def do_conv(x, layer_name, kernel_size, filter_size, stride_size, padding='SAME', activation_method=None,
+            trainable=True,
+            is_training=True,
+            bn=True,
+            weights_initializer=tf.truncated_normal_initializer(0.0, stddev=0.01)):
     with tf.variable_scope(layer_name):
         in_shape = x.get_shape().as_list()
         # initializer = tf.contrib.layers.xavier_initializer()
         weights = get_weights('weights', shape=[kernel_size[0], kernel_size[1], in_shape[-1], filter_size],
                               initializer=weights_initializer, trainable=trainable)
-        bias = get_weights('bias', shape=[filter_size], initializer=tf.constant_initializer(value=0.0), trainable=trainable)
+        bias = get_weights('biases', shape=[filter_size], initializer=tf.constant_initializer(value=0.0), trainable=trainable)
         output = tf.nn.conv2d(x, filter=weights,
                               strides=[1, stride_size[0], stride_size[1], 1], padding=padding)
         output = tf.nn.bias_add(output, bias)
+        if bn:
+            output = tf.contrib.layers.batch_norm(output, is_training=is_training)
         if activation_method is not None:
             output = activation_method(output)
         return output
@@ -137,7 +143,7 @@ def do_bilstm_fc(input, layer_name, d_i, d_h, d_o, trainable=True):
 
         outputs = tf.reshape(fc_outputs, [N, H, W, d_o])
         print outputs
-        return outputs
+        return outputs, bilstm_outputs, fc_outputs
 
 
 def lstm_fc(input, layer_name, d_i, d_o, trainable=True):
@@ -155,8 +161,16 @@ def lstm_fc(input, layer_name, d_i, d_o, trainable=True):
 
 
 def load(data_path, session, saver, ignore_missing=False):
-    if data_path.endswith('.ckpt'):
-        saver.restore(session, data_path)
+    if data_path.endswith('.ckpt') or os.path.isdir(data_path):
+        if data_path.endswith('.ckpt'):
+            saver.restore(session, data_path)
+        else:
+
+            ckpt = tf.train.get_checkpoint_state(data_path)
+            saver.restore(session, ckpt.model_checkpoint_path)
+            stem = os.path.splitext(os.path.basename(ckpt.model_checkpoint_path))[0]
+            restore_iter = int(stem.split('_')[-1])
+            return restore_iter
     else:
         data_dict = np.load(data_path).item()
         for key in data_dict:

@@ -1,14 +1,14 @@
 # -*- coding=utf-8 -*-
 import numpy as np
 import cv2
-from util.processing import resize_points, resolve_points, draw_polygon_image, resolve_text, draw_rects_image
+from util.processing import resize_points, resolve_points, draw_polygon_image, resolve_text, draw_rects_image, read_imgs_gtfiles
 
 
 class ImageGT:
     '''
     代表了Image和ground truth的组合对儿
     '''
-    def __init__(self, imgs, gtlines, limit_min=600, limit_max=800):
+    def __init__(self, img_files, gtline_files, limit_min=600, limit_max=800):
         '''
         初始化该对象
         :param imgs: images N * x*x * 3
@@ -16,13 +16,13 @@ class ImageGT:
         :param limit_min: 图像的最小边的长度
         :param limit_max: 图像最大边的长度
         '''
-        self.imgs = imgs
-        self.gtlines = gtlines
+        print img_files, gtline_files
+        self.imgs, self.gtlines = read_imgs_gtfiles(img_files, gtline_files)
         self.limit_min = limit_min
         self.limit_max = limit_max
         self.points = resolve_points(self.gtlines[0])
-        self.re_imgs, self.re_points = self.resize_img()
-        self.im_info = [np.array(re_img).shape[0:2] for re_img in self.re_imgs]
+        self.re_imgs, self.re_points, self.re_scales = self.resize_img()
+        self.im_sizes = [np.array(re_img).shape[0:2] for re_img in self.re_imgs]
         self.gt_texts = resolve_text(self.gtlines[0])
         self.notcare = []
         cur_notcare = []
@@ -32,13 +32,17 @@ class ImageGT:
         self.notcare.append(cur_notcare)
 
         self.re_points = np.squeeze(self.re_points)
-        self.gt = np.concatenate((self.re_points, np.ones([len(self.re_points), 1])), axis=1)
-        self.is_hard = [False] * len(self.gt)
+        # self.gt = np.concatenate((self.re_points, np.ones([len(self.re_points), 1])), axis=1)
+        self.gt_bboxes = self.re_points
+        self.is_hard = [False] * len(self.gt_bboxes)
+        # print np.shape(self.im_sizes), np.shape(self.re_scales)
+        self.im_info = np.concatenate((self.im_sizes, self.re_scales), axis=1)
         # print np.shape(self.imgs), np.shape(self.re_points), np.shape(self.im_info)
 
     def resize_img(self, show=False):
         imgs = []
         points = []
+        scales = []
         for index, img in enumerate(self.imgs):
             img = np.array(img)
             img_size = img.shape
@@ -59,4 +63,5 @@ class ImageGT:
                 draw_rects_image(re_im, re_cur_points)
             imgs.append(re_im)
             points.append(re_cur_points)
-        return imgs, points
+            scales.append([im_scale])
+        return imgs, points, scales

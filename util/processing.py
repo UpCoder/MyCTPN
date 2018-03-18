@@ -4,6 +4,7 @@ import numpy as np
 import os
 from PIL import Image, ImageDraw
 import math
+from lib.fast_rcnn.config import cfg
 
 
 def read_image(image_path):
@@ -32,6 +33,8 @@ def read_imgs_gtfiles(img_files, gt_files):
         img = read_image(img_file)
         if img is None:
             continue
+        img = np.asarray(img, np.float32)
+        img = img - cfg.PIXEL_MEANS
         imgs.append(img)
         gts.append(read_gtfile(gt_files[index]))
     return imgs, gts

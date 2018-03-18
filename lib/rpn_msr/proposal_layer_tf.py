@@ -63,8 +63,10 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs, which we want
     # (1, H, W, A)
+    print 'ok1', np.shape(rpn_cls_prob_reshape), [1, height, width, _num_anchors, 2]
     scores = np.reshape(np.reshape(rpn_cls_prob_reshape, [1, height, width, _num_anchors, 2])[:,:,:,:,1],
                         [1, height, width, _num_anchors])
+    print 'ok2'
     #提取到object的分数，non-object的我们不关心
     #并reshape到1*H*W*9
 
@@ -155,7 +157,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # batch inds are 0
     blob = np.hstack((scores.astype(np.float32, copy=False), proposals.astype(np.float32, copy=False)))
 
-    return blob,bbox_deltas
+    return blob, bbox_deltas
 
 
 def _filter_boxes(boxes, min_size):

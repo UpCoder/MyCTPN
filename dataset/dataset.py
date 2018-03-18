@@ -31,16 +31,26 @@ class Dataset:
         self.gt_files = self.gt_files[inds]
         if not self.check_sort():
             return
+        new_img_files = []
+        new_gt_files = []
+        for index, img_file in enumerate(self.img_files):
+            if img_file.endswith('jpg') or img_file.endswith('png'):
+                new_img_files.append(img_file)
+                new_gt_files.append(self.gt_files[index])
+        self.img_files = new_img_files
+        self.gt_files = new_gt_files
         self.img_train_files, self.gt_train_files, self.img_val_files, self.gt_val_files = split2_train_val(
             self.img_files, self.gt_files)
-        self.train_imgs, self.train_gt = read_imgs_gtfiles(self.img_train_files, self.gt_train_files)
-        self.val_imgs, self.val_gt = read_imgs_gtfiles(self.img_val_files, self.gt_val_files)
-        self.train_generator = GenerateBatch(self.train_imgs, self.train_gt, batch_size=1).generate_next_batch()
-        self.val_generator = GenerateBatch(self.val_imgs, self.val_gt, batch_size=1).generate_next_batch()
+        # self.train_imgs, self.train_gt = read_imgs_gtfiles(self.img_train_files, self.gt_train_files)
+        # self.val_imgs, self.val_gt = read_imgs_gtfiles(self.img_val_files, self.gt_val_files)
+        self.train_generator = GenerateBatch(self.img_train_files, self.gt_train_files, batch_size=1).generate_next_batch()
+        self.val_generator = GenerateBatch(self.img_val_files, self.gt_val_files, batch_size=1).generate_next_batch()
 
 
 if __name__ == '__main__':
-    dataset = Dataset('/home/give/Game/OCR/data/ICDAR2017/img_test', '/home/give/Game/OCR/data/ICDAR2017/txt_test')
-    # for i in range(120):
-    imageGT = dataset.train_generator.next()
-    imageGT.resize_img(show=True)
+    dataset = Dataset('/home/give/Game/OCR/data/ICDAR2017/img', '/home/give/Game/OCR/data/ICDAR2017/txt')
+    for i in range(1200):
+        if (i % 100) == 0:
+            print i
+        imageGT = dataset.train_generator.next()
+    # imageGT.resize_img(show=True)

@@ -314,3 +314,8 @@ def cfg_from_list(cfg_list):
             'type {} does not match original type {}'.format(
             type(value), type(d[subkey]))
         d[subkey] = value
+
+
+if __name__ == '__main__':
+    cfg_obj = cfg_from_file('/home/give/PycharmProjects/MyCTPN/ctpn/text.yml')
+    print cfg_obj

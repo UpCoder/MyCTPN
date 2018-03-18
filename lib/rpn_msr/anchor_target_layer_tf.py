@@ -190,7 +190,7 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
         labels[disable_inds] = -1#变为-1
 
     # subsample negative labels if we have too many
-    #对负样本进行采样，如果负样本的数量太多的话
+    # 对负样本进行采样，如果负样本的数量太多的话
     # 正负样本总数是256，限制正样本数目最多128，
     # 如果正样本数量小于128，差的那些就用负样本补上，凑齐256个样本
     num_bg = cfg.TRAIN.RPN_BATCHSIZE - np.sum(labels == 1)
@@ -203,7 +203,7 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, gt_ishard, dontcare_areas, im_i
             #len(bg_inds), len(disable_inds), np.sum(labels == 0))
 
     # 至此， 上好标签，开始计算rpn-box的真值
-    #--------------------------------------------------------------
+    # --------------------------------------------------------------
     bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
     bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :])#根据anchor和gtbox计算得真值（anchor和gtbox之间的偏差）
 
@@ -300,6 +300,6 @@ def _compute_targets(ex_rois, gt_rois):
 
     assert ex_rois.shape[0] == gt_rois.shape[0]
     assert ex_rois.shape[1] == 4
-    assert gt_rois.shape[1] == 5
+    # assert gt_rois.shape[1] == 5
 
     return bbox_transform(ex_rois, gt_rois[:, :4]).astype(np.float32, copy=False)

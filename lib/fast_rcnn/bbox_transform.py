@@ -23,6 +23,8 @@ def bbox_transform(ex_rois, gt_rois):
 
     # warnings.catch_warnings()
     # warnings.filterwarnings('error')
+    assert not(0 in gt_widths)
+    assert not(0 in gt_heights)
     targets_dx = (gt_ctr_x - ex_ctr_x) / ex_widths
     targets_dy = (gt_ctr_y - ex_ctr_y) / ex_heights
     targets_dw = np.log(gt_widths / ex_widths)
